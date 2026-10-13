@@ -40,6 +40,19 @@ const MIN_WIDTH_FOR_FILE_LIST: u16 = 100;
 /// auto-repeat still shows progress instead of sitting on a stale frame.
 const EVENT_DRAIN_LIMIT: usize = 32;
 
+fn preferred_startup_warning(warnings: &[String]) -> Option<&str> {
+    warnings
+        .iter()
+        .find(|warning| is_syntax_theme_fallback_warning(warning))
+        .or_else(|| warnings.first())
+        .map(String::as_str)
+}
+
+fn is_syntax_theme_fallback_warning(warning: &str) -> bool {
+    (warning.contains("syntax theme") || warning.contains("syntax_theme"))
+        && warning.contains("bundled")
+}
+
 /// How long the loop may wait for the next event after already consuming
 /// `drained` of them: the first blocks so an idle TUI costs nothing, later ones
 /// are only taken if already queued. `None` ends the burst.
@@ -404,8 +417,8 @@ fn main() -> anyhow::Result<()> {
         app.focused_panel = FocusedPanel::Diff;
     }
 
-    if let Some(message) = startup_warnings.first() {
-        app.set_warning(message.clone());
+    if let Some(message) = preferred_startup_warning(&startup_warnings) {
+        app.set_warning(message);
     }
 
     // Track pending z command for zz centering
@@ -1051,6 +1064,19 @@ fn run_editor_from_tui<W: Write>(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn startup_warning_prefers_syntax_theme_fallback() {
+        let warnings = vec![
+            "Warning: Unknown local theme key 'extra'".to_string(),
+            "Warning: Failed to load syntax theme; using bundled syntax theme".to_string(),
+        ];
+
+        assert_eq!(
+            preferred_startup_warning(&warnings),
+            Some(warnings[1].as_str())
+        );
+    }
 
     #[test]
     fn drain_blocks_once_then_takes_only_queued_events() {

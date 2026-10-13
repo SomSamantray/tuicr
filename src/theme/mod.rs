@@ -2243,7 +2243,16 @@ fn load_local_theme_from_path(path: &Path) -> Result<(Theme, Vec<String>), Strin
             path.display()
         ));
     }
-    let syntax_theme = parse_optional_local_theme_string(table, "syntax_theme")?;
+    let syntax_theme = match parse_optional_local_theme_string(table, "syntax_theme") {
+        Ok(syntax_theme) => syntax_theme,
+        Err(err) => {
+            warnings.push(format!(
+                "Warning: Invalid syntax_theme in local theme '{}': {err}; using bundled syntax theme",
+                path.display()
+            ));
+            None
+        }
+    };
     let syntax_theme = match syntax_theme.as_deref() {
         Some(value) => match load_custom_syntect_theme(path, value) {
             Ok(theme) => SyntaxThemeSource::Custom(Box::new(theme)),
@@ -2827,6 +2836,30 @@ mode_bg = "#82aaff"
         );
         assert_eq!(warnings.len(), 1);
         assert!(warnings[0].contains("Failed to load syntax theme"));
+    }
+
+    #[test]
+    fn should_keep_local_theme_when_syntax_theme_setting_is_invalid() {
+        let dir = tempdir().expect("failed to create temp dir");
+
+        for syntax_setting in [r#"syntax_theme = 42"#, r#"syntax_theme = """#] {
+            let path = write_local_theme(
+                dir.path(),
+                "local-teal",
+                &sample_local_theme_body(syntax_setting),
+            );
+
+            let (theme, warnings) = load_local_theme_from_path(&path)
+                .expect("an invalid syntax_theme setting should not reject the local UI theme");
+            assert_eq!(theme.panel_bg, Color::Rgb(1, 22, 39));
+            assert_eq!(
+                theme.embedded_syntax_theme_name(),
+                Some(EmbeddedThemeName::Base16EightiesDark)
+            );
+            assert_eq!(warnings.len(), 1);
+            assert!(warnings[0].contains("syntax_theme"));
+            assert!(warnings[0].contains("using bundled syntax theme"));
+        }
     }
 
     #[test]

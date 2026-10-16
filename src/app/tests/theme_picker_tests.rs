@@ -184,6 +184,35 @@ fn picker_confirmation_keeps_syntax_theme_fallback_warning_after_it_would_expire
 }
 
 #[test]
+fn cancelling_picker_restores_the_message_that_was_visible_before_preview() {
+    let mut app = app();
+    app.set_message("Message before opening picker");
+    let original_message = app.message.clone();
+    app.enter_theme_picker_mode();
+    app.show_theme_preview_warnings(&[
+        "Failed to load syntax theme; using bundled syntax theme".to_string()
+    ]);
+
+    app.cancel_theme_picker();
+
+    assert_eq!(app.message, original_message);
+}
+
+#[test]
+fn cancelling_picker_clears_a_fallback_warning_when_no_message_was_present() {
+    let mut app = app();
+    assert!(app.message.is_none());
+    app.enter_theme_picker_mode();
+    app.show_theme_preview_warnings(&[
+        "Failed to load syntax theme; using bundled syntax theme".to_string()
+    ]);
+
+    app.cancel_theme_picker();
+
+    assert!(app.message.is_none());
+}
+
+#[test]
 fn session_theme_announcement_replaces_unrelated_warning() {
     let mut app = app();
     app.set_warning("An unrelated warning");

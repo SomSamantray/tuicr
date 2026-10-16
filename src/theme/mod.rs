@@ -16,6 +16,13 @@ use two_face::theme::EmbeddedThemeName;
 use crate::config::themes_dir;
 use crate::syntax::SyntaxHighlighter;
 
+/// Whether a theme warning reports that its syntax theme fell back to a
+/// bundled theme. Shared by startup and the runtime theme picker.
+pub fn is_syntax_theme_fallback_warning(warning: &str) -> bool {
+    (warning.contains("syntax theme") || warning.contains("syntax_theme"))
+        && warning.contains("bundled")
+}
+
 #[derive(Clone)]
 pub enum SyntaxThemeSource {
     Embedded(EmbeddedThemeName),

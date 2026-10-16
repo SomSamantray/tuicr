@@ -15,6 +15,7 @@ impl App {
         }
 
         self.theme_picker.original = Some(self.theme.clone());
+        self.theme_picker.original_message = self.message.clone();
         self.theme_picker.candidates = candidates;
         self.theme_picker.filter = None;
         self.theme_picker.draft = None;
@@ -33,6 +34,7 @@ impl App {
             // that was never actually chosen.
             self.rehighlight_current_file();
         }
+        self.message = self.theme_picker.original_message.take();
         self.exit_theme_picker_mode();
     }
 
@@ -56,6 +58,7 @@ impl App {
         self.theme_picker.draft = None;
         self.theme_picker.list_state = ratatui::widgets::ListState::default();
         self.theme_picker.original = None;
+        self.theme_picker.original_message = None;
     }
 
     /// Move the highlighted row within the filtered view and live-preview
@@ -140,10 +143,10 @@ impl App {
     pub(super) fn show_theme_preview_warnings(&mut self, warnings: &[String]) {
         if let Some(warning) = warnings
             .iter()
-            .find(|warning| is_syntax_theme_fallback_warning_text(warning))
+            .find(|warning| crate::theme::is_syntax_theme_fallback_warning(warning))
             .or_else(|| warnings.first())
         {
-            if is_syntax_theme_fallback_warning_text(warning) {
+            if crate::theme::is_syntax_theme_fallback_warning(warning) {
                 self.set_sticky_warning(warning.clone());
             } else {
                 self.set_warning(warning.clone());
@@ -257,10 +260,5 @@ impl App {
 
 fn is_syntax_theme_fallback_warning(message: &Message) -> bool {
     message.message_type == MessageType::Warning
-        && is_syntax_theme_fallback_warning_text(&message.content)
-}
-
-fn is_syntax_theme_fallback_warning_text(warning: &str) -> bool {
-    (warning.contains("syntax theme") || warning.contains("syntax_theme"))
-        && warning.contains("bundled")
+        && crate::theme::is_syntax_theme_fallback_warning(&message.content)
 }

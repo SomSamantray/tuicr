@@ -26,7 +26,7 @@ use tuicr::input::{
     map_key_to_action_with_q_quits, map_target_filter_mode, map_theme_picker_filter_mode,
 };
 use tuicr::terminal_state::{TerminalFeatures, TerminalSession};
-use tuicr::theme::resolve_theme_with_config;
+use tuicr::theme::{is_syntax_theme_fallback_warning, resolve_theme_with_config};
 use tuicr::vcs::{DiffWhitespaceMode, GitBackendPreference, WhitespaceAutoPolicy};
 use tuicr::{config, handler, profile, ui, update};
 
@@ -46,11 +46,6 @@ fn preferred_startup_warning(warnings: &[String]) -> Option<&str> {
         .find(|warning| is_syntax_theme_fallback_warning(warning))
         .or_else(|| warnings.first())
         .map(String::as_str)
-}
-
-fn is_syntax_theme_fallback_warning(warning: &str) -> bool {
-    (warning.contains("syntax theme") || warning.contains("syntax_theme"))
-        && warning.contains("bundled")
 }
 
 /// How long the loop may wait for the next event after already consuming
